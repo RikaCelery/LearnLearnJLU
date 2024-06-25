@@ -19,6 +19,9 @@ data class AppUI(
     val isLoading: Boolean = false,
     val currentTerm: TermInfo? = null,
     val courseNameFilter: String = "",
+    val username:String="",
+    val password:String="",
+    val page:Int=0,
 ) {}
 
 
@@ -124,8 +127,11 @@ class AppVM : ViewModel() {
                 _uiState.update { current ->
                     current.copy(isLoginInProgress = true)
                 }
-                delay(1000)
-                ILearnTech.login(Http.client, "", "") {
+                if (_uiState.value.username.isNullOrEmpty() || _uiState.value.password.isNullOrEmpty()){
+                    snack("Username or Password is empty.")
+                    return@launch
+                }
+                ILearnTech.login(Http.client, _uiState.value.username, _uiState.value.password) {
                     loginLog.add(0, it);
                     if (loginLog.size > 50) loginLog.removeLast()
                 }
@@ -145,6 +151,16 @@ class AppVM : ViewModel() {
     fun setTerm(item: TermInfo) {
         _uiState.update {
             it.copy(currentTerm = item)
+        }
+    }
+    fun setUsername(username: String) {
+        _uiState.update {
+            it.copy(username = username)
+        }
+    }
+    fun setPassword(password: String) {
+        _uiState.update {
+            it.copy(password = password)
         }
     }
 }
