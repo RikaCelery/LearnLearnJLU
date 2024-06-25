@@ -1,10 +1,15 @@
 package ui.vm
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import network.model.VideoClassInfo
+import kotlinx.coroutines.launch
+import network.Http
+import network.model.CourseInfo
+import service.ILearnTech
 
 data class CourseVideoCard(
     val courseName: String,
@@ -13,7 +18,7 @@ data class CourseVideoCard(
     val courseLocation: String?,
     val courseTerm: String,
     val id: String,
-    val streams: VideoClassInfo.VideoClassMap = VideoClassInfo.VideoClassMap()
+    val resourceId: String? = null
 ) {
     val display: String
         get() = "$courseName ($courseTeacher)"
@@ -21,7 +26,7 @@ data class CourseVideoCard(
 }
 
 class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
-    constructor(card: VideoClassInfo, term: String, termId: String) : this(
+    constructor(card: CourseInfo, term: String, termId: String) : this(
         CourseVideoCard(
             courseName = card.courseName,
             courseTeacher = card.teacherName,
@@ -29,7 +34,7 @@ class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
             courseLocation = card.roomName,
             courseSchedule = card.formatSchedule,
             id = card.id,
-            streams = card.videoClassMap
+            resourceId = card.resourceId
         )
     )
 
@@ -38,6 +43,13 @@ class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
     private val _uiState = MutableStateFlow(card)
     val uiState: StateFlow<CourseVideoCard> = _uiState.asStateFlow()
     fun click() {
+        GlobalScope.launch(Dispatchers.IO) {
+            val info = ILearnTech.queryDownloadInfo(Http.client,_uiState.value.resourceId!!)
+            val file =  Http.splitDownload(info.videoList[1].videoPath){ index, current, total ->
+
+            }
+            println(file)
+        }
         //todo
     }
 

@@ -8,7 +8,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
 @Serializable
-data class VideoClassInfo(
+data class CourseInfo(
     val buildingName: String?,
     val classIds: String,
     val classNames: String,

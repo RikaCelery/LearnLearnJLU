@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import network.Http
 import network.model.TermInfo
-import network.model.VideoClassInfo
+import network.model.CourseInfo
+import service.Persist
 import service.ILearnTech
 
 data class AppUI(
@@ -22,7 +23,7 @@ data class AppUI(
     val username:String="",
     val password:String="",
     val page:Int=0,
-) {}
+)
 
 
 class AppVM : ViewModel() {
@@ -37,7 +38,7 @@ class AppVM : ViewModel() {
     private val _terms = MutableStateFlow(listOf<TermInfo>())
     val terms = _terms.asStateFlow()
 
-    private val _videos = mutableStateMapOf<TermInfo, List<VideoClassInfo>>()
+    private val _videos = mutableStateMapOf<TermInfo, List<CourseInfo>>()
     val videos
         get() = _uiState.value.currentTerm?.let { term ->
             _videos[term]?.let {
@@ -131,8 +132,8 @@ class AppVM : ViewModel() {
                     snack("Username or Password is empty.")
                     return@launch
                 }
-                ILearnTech.login(Http.client, _uiState.value.username, _uiState.value.password) {
-                    loginLog.add(0, it);
+                ILearnTech.login(Http.client, _uiState.value.username.trim(), _uiState.value.password.trim()) {
+                    loginLog.add(0, it)
                     if (loginLog.size > 50) loginLog.removeLast()
                 }
                 snack("Login Succeed.")

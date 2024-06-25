@@ -61,15 +61,15 @@ fun App(vm: AppVM = viewModel()) {
                             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(state.currentTerm?.let { it.year + it.name } ?: "not specific")
-                        }
-                        DropdownMenu(expanded = display, onDismissRequest = { display = false }) {
-                            for (item in terms) DropdownMenuItem(text = {
-                                Text(text = item.year + item.name)
-                            }, onClick = {
-                                display = false
-                                vm.setTerm(item)
-                                vm.refreshVideos()
-                            })
+                            DropdownMenu(expanded = display, onDismissRequest = { display = false }) {
+                                for (item in terms) DropdownMenuItem(text = {
+                                    Text(text = item.year + item.name)
+                                }, onClick = {
+                                    display = false
+                                    vm.setTerm(item)
+                                    vm.refreshVideos()
+                                })
+                            }
                         }
                     }
 

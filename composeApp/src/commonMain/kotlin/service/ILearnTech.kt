@@ -114,23 +114,25 @@ object ILearnTech {
             logging(msg("ilearntec CAS Login Done, Ticket Got."))
 
             logging(msg("ilearntec CAS Login By Ticket"))
-            client.get("https://ilearntec.jlu.edu.cn/coursecenter/main/index") {
+            client.get("https://ilearn.jlu.edu.cn") {
+                parameter("ssoservice", "https://ilearntec.jlu.edu.cn/")
                 parameter("ticket", ilearnCasReturn.String("ticket"))
             }
             logging(msg("ilearntec CAS Ticket Login Done"))
 
+            logging(msg("ilearntec CAS Course Center Login"))
+            client.get("https://ilearn.jlu.edu.cn/cas-server/login") {
+                parameter("service", "https://ilearntec.jlu.edu.cn/coursecenter/main/index")
+            }
+            logging(msg("ilearntec CAS Course Center Login Done"))
+
             logging(msg("ilearntec CAS Refresh JSESSIONID"))
             /**
-             * need this to refresh JSESSIONID
+             * need this to refresh JSESSIONID for /resource-center/
              */
-//            client.get("https://ilearnres.jlu.edu.cn/resource-center/user/index")
+            client.get("https://ilearnres.jlu.edu.cn/resource-center/user/index")
             logging(msg("ilearntec CAS Refresh JSESSIONID Done"))
 
-            logging(msg("ilearntec CAS Study Center Login"))
-            client.get("https://ilearn.jlu.edu.cn/cas-server/login") {
-                parameter("service", "https://ilearntec.jlu.edu.cn/studycenter/platform/main/index")
-            }
-            logging(msg("ilearntec CAS Study Center Login Done"))
             logined = true
             return true
         } catch (e: Exception) {
@@ -157,29 +159,39 @@ object ILearnTech {
         return response.data.dataList
     }
 
-    suspend fun liveAndRecordingsByTerm(client: HttpClient, termYear: String, term: String): List<VideoClassInfo> {
+    suspend fun liveAndRecordingsByTerm(client: HttpClient, termYear: String, term: String): List<CourseInfo> {
         val response = client.get(Consts.QUERY_LIVE_AND_RECORD) {
             parameter("roomType", 0)
             parameter("identity", 2)
             parameter("termYear", termYear)
             parameter("term", term)
-        }.body<JsonResponse<ListResponse<VideoClassInfo>>>()
+        }.body<JsonResponse<ListResponse<CourseInfo>>>()
         require(response.status == 1) { "Query Videos Failed" }
         requireNotNull(response.data) { "Query Videos Failed, 'data' Is Null" }
         return response.data.dataList
     }
 
-    suspend fun liveAndRecordingsByLesson(client: HttpClient, termId: String, classroomId: String): List<VideoClassInfo> {
+    suspend fun liveAndRecordingsByLesson(client: HttpClient, termId: String, classroomId: String): List<CourseInfo> {
         val response = client.get(Consts.QUERY_LIVE_AND_RECORD) {
             parameter("roomType", 0)
             parameter("identity", 2)
             parameter("submitStatus", 0)
             parameter("termId", termId)
             parameter("teachClassId", classroomId)
-        }.body<JsonResponse<ListResponse<VideoClassInfo>>>()
+        }.body<JsonResponse<ListResponse<CourseInfo>>>()
 
         require(response.status == 1) { "Query Videos Failed" }
         requireNotNull(response.data) { "Query Videos Failed, 'data' Is Null" }
         return response.data.dataList
+    }
+
+
+    suspend fun queryDownloadInfo(client: HttpClient, resourceId: String): CourseVideoInfo {
+        val response = client.get(Consts.QUERY_VIDEO_INFO) {
+            parameter("resourceId", resourceId)
+        }.body<JsonResponse<CourseVideoInfo>>()
+        require(response.status == 1) { "Query Download Info Failed" }
+        requireNotNull(response.data) { "Query Download Info Failed, 'data' Is Null" }
+        return response.data
     }
 }
