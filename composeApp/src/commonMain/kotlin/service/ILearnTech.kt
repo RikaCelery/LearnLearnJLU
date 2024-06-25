@@ -41,10 +41,11 @@ object ILearnTech {
     suspend fun login(client: HttpClient, username: String, password: String, logging: (String) -> Unit = {}): Boolean {
         try {
             logging(msg("CAS Login Get lt"))
+
             val casResp = client.get(Consts.CAS_URL) {
                 parameter("service", "https://jwcidentity.jlu.edu.cn/iplat-pass-jlu/thirdLogin/jlu/login")
             }
-            logging(msg("status code: ${casResp.status}"))
+            logging(msg("CAS Login Status Code: ${casResp.status}"))
             require(casResp.status.isSuccess())
             val casHtml = Jsoup.parse(casResp.bodyAsText())
             val casEvent = casHtml.selectFirst("#loginForm > input:nth-child(10)")?.attr("value")
