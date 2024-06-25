@@ -50,6 +50,7 @@ kotlin {
             implementation("org.jsoup:jsoup:1.17.2")
         }
         commonTest.dependencies {
+            implementation("org.testng:testng:7.1.0")
             implementation(kotlin("test"))
             implementation(kotlin("test-common"))
             implementation(kotlin("test-annotations-common"))
@@ -99,15 +100,6 @@ android {
     dependencies {
         debugImplementation(compose.uiTooling)
     }
-}
-dependencies {
-    implementation("io.ktor:ktor-client-okhttp-jvm:2.3.12")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
-    testImplementation("org.testng:testng:7.1.0")
-    testImplementation("org.testng:testng:7.1.0")
-    testImplementation("org.testng:testng:7.1.0")
-    testImplementation("org.testng:testng:7.1.0")
-    testImplementation("org.testng:testng:7.1.0")
 }
 
 compose.desktop {
