@@ -20,8 +20,8 @@ data class AppUI(
     val isLoading: Boolean = false,
     val currentTerm: TermInfo? = null,
     val courseNameFilter: String = "",
-    val username:String="",
-    val password:String="",
+    val username:String=Persist.dbload("username")?:"",
+    val password:String=Persist.dbload("password")?:"",
     val page:Int=0,
 )
 
@@ -158,10 +158,13 @@ class AppVM : ViewModel() {
         _uiState.update {
             it.copy(username = username)
         }
+        Persist.dbsave("username",username)
+
     }
     fun setPassword(password: String) {
         _uiState.update {
             it.copy(password = password)
         }
+        Persist.dbsave("password",password)
     }
 }

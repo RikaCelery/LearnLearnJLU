@@ -46,8 +46,12 @@ kotlin {
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.constraintlayout.compose.multiplatform)
             implementation(libs.lifecycle.viewmodel.compose)
+            implementation(libs.exposed.core)
+            implementation(libs.exposed.dao)
+            implementation(libs.exposed.jdbc)
 
-            implementation("org.jsoup:jsoup:1.17.2")
+            implementation(libs.jsoup)
+            implementation(libs.sqlite.jdbc)
         }
         commonTest.dependencies {
             implementation("org.testng:testng:7.1.0")
@@ -71,6 +75,10 @@ android {
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")
+    sourceSets["main"].jniLibs {
+        this
+        srcDir("src/androidMain/jniLibs")
+    }
     sourceSets["main"].resources.srcDirs("src/commonMain/resources")
 
     defaultConfig {
