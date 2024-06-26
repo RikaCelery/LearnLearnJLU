@@ -8,7 +8,6 @@ import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.util.date.*
-import kotlinx.serialization.json.Json
 import network.model.*
 import org.jsoup.Jsoup
 import util.crypto.strEnc
@@ -25,8 +24,10 @@ object ILearnTech {
 
     private val Number.pad2: String
         get() = toString().padStart(2, '0')
+    @Suppress("Unused")
     private val Number.pad3: String
         get() = toString().padStart(3, '0')
+    @Suppress("Unused")
     private val Number.pad4: String
         get() = toString().padStart(4, '0')
 
@@ -39,7 +40,7 @@ object ILearnTech {
      * @throws LoginException when login failed
      */
     @OptIn(ExperimentalEncodingApi::class)
-    suspend fun login(client: HttpClient, username: String, password: String, logging: (String) -> Unit = {}): Boolean {
+    suspend fun login(client: HttpClient, username: String, password: String, logging: (String) -> Unit = {}) {
         try {
             logging(msg("CAS Login Get lt"))
 
@@ -54,7 +55,7 @@ object ILearnTech {
             val casNonce = casHtml.selectFirst("#lt")?.attr("value")
             if (casNonce == null || casEvent == null || casExecution == null) {
                 logging(msg("Already Logged in"))
-                return true
+                return
             }
             logging(msg("CAS Login lt Got"))
 
@@ -133,10 +134,8 @@ object ILearnTech {
              */
             client.get("https://ilearnres.jlu.edu.cn/resource-center/user/index")
             logging(msg("ilearntec CAS Refresh JSESSIONID Done"))
-
-            logined = true
-            return true
         } catch (e: Exception) {
+            logging(msg("Login Failed, message:"+e.message))
             e.printStackTrace()
             throw LoginException("Login Failed", e)
         }

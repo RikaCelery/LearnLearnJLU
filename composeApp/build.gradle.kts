@@ -94,6 +94,10 @@ android {
         }
     }
     buildTypes {
+        release {
+            //Missing class org.slf4j.impl.StaticLoggerBinder (referenced from: void org.slf4j.LoggerFactory.bind() and 3 other contexts)
+
+        }
         getByName("release") {
             isMinifyEnabled = false
         }
@@ -116,8 +120,6 @@ compose.desktop {
         buildTypes.release.proguard {
             configurationFiles.from(files("proguard.pro"))
             version.set("7.2.2")
-//            optimize.set(false)
-            this.isEnabled = true
         }
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

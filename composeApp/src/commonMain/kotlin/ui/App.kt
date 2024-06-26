@@ -54,6 +54,36 @@ fun App(vm: AppVM = viewModel()) {
                     OutlinedButton(
                         {
                             display = !display
+                            if (vm.courses.isEmpty())
+                                vm.refreshTerms {
+                                    vm.refreshVideos()
+                                }
+                        }, contentPadding = PaddingValues(horizontal = 10.dp)
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(state.courseNameFilter.ifBlank { "全部课程" })
+                            DropdownMenu(expanded = display, onDismissRequest = { display = false }) {
+                                DropdownMenuItem(text = {
+                                    Text(text = "无")
+                                }, onClick = {
+                                    display = false
+                                    vm.setCourseNameFilter("")
+                                })
+                                for (item in vm.courses) DropdownMenuItem(text = {
+                                    Text(text = item)
+                                }, onClick = {
+                                    display = false
+                                    vm.setCourseNameFilter(item)
+                                })
+                            }
+                        }
+                    }
+                    var display2 by remember { mutableStateOf(false) }
+                    OutlinedButton(
+                        {
+                            display2 = !display2
                             if (vm.terms.value.isEmpty())
                                 vm.refreshTerms {
                                     vm.refreshVideos()
@@ -64,11 +94,11 @@ fun App(vm: AppVM = viewModel()) {
                             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(state.currentTerm?.let { it.year + it.name } ?: "not specific")
-                            DropdownMenu(expanded = display, onDismissRequest = { display = false }) {
+                            DropdownMenu(expanded = display2, onDismissRequest = { display2 = false }) {
                                 for (item in terms) DropdownMenuItem(text = {
                                     Text(text = item.year + item.name)
                                 }, onClick = {
-                                    display = false
+                                    display2 = false
                                     vm.setTerm(item)
                                 })
                             }

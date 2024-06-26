@@ -44,7 +44,7 @@ data class CourseInfo(
     class VideoClassMap(map: Map<String, String> = mapOf()) : Map<String, String> by map
 
     val formatSchedule: String
-        get() = "${currentWeek}周 星期${currentDay}$timeRange"
+        get() = "${currentWeek}周 星期${currentDay} $timeRange"
 
     object VideoClassMapSerializer : kotlinx.serialization.KSerializer<VideoClassMap> {
         override val descriptor: SerialDescriptor

@@ -2,6 +2,10 @@ package service
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import util.OsUtils
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.exists
 
 object DB {
     object ConfTable : Table("configs") {
@@ -41,7 +45,10 @@ object DB {
 
     // 设置数据库连接
     private fun setupDatabase() {
-        Database.connect("jdbc:sqlite:data.db", "org.sqlite.JDBC")
+        val userHome =OsUtils.homeDir
+        if (!Path("$userHome/.jlu-learn-tech/config.db").exists())
+            Path("$userHome/.jlu-learn-tech").createDirectories()
+        Database.connect("jdbc:sqlite:"+userHome + "/.jlu-learn-tech/config.db", "org.sqlite.JDBC")
     }
 
     // 创建表
@@ -52,14 +59,20 @@ object DB {
     }
 
     init {
-        setupDatabase()
-        createTable()
+        try{
+            setupDatabase()
+            createTable()
+        }catch (e:Exception){
+            e.printStackTrace()
+        }
     }
 }
 actual fun save(key: String, value: String) :String?{
+    return null
     return DB.setValue(key, value)
 }
 
 actual fun load(key: String): String? {
+    return null
     return DB.getValue(key)
 }

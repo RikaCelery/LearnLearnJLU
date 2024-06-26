@@ -2,14 +2,16 @@ package ui.vm
 
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import network.model.CourseInfo
 import service.DownloadManager
+import util.Config
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 data class CourseVideoCard(
     val courseName: String,
@@ -18,7 +20,8 @@ data class CourseVideoCard(
     val courseLocation: String?,
     val courseTerm: String,
     val id: String,
-    val resourceId: String? = null
+    val resourceId: String? = null,
+    val streams: List<String> = listOf<String>(),
 ) {
     val display: String
         get() = "$courseName ($courseTeacher)"
@@ -44,6 +47,7 @@ class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
             new.toMutableStateList()
         }
     }
+
     val teacherVideoDownloadInfo = _teacherVideoDownloadInfo.asStateFlow()
 
     private val _computerVideoDownloadInfo = MutableStateFlow(mutableListOf<SegmentDownloadInfo>())
@@ -52,11 +56,12 @@ class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
             new.toMutableStateList()
         }
     }
+
     val computerVideoDownloadInfo = _computerVideoDownloadInfo.asStateFlow()
 
     val id
         get() = uiState.value.id
-    private val scope = CoroutineScope(SupervisorJob())
+
     private val _uiState = MutableStateFlow(card)
     val uiState: StateFlow<CourseVideoCard> = _uiState.asStateFlow()
 
@@ -65,18 +70,45 @@ class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
     }
 
     fun downloadHdmi() {
-        DownloadManager.submit(id + "hdmi", uiState.value.resourceId!!, "HDMI", { new ->
+        val value = uiState.value
+        if (isDestFileExist(value.courseTerm, value.courseName, value.courseSchedule, "HDMI")) {
+            setComputerDownloadInfo(listOf(SegmentDownloadInfo(0,1,1)))
+            return
+        }
+        DownloadManager.submit(id + "hdmi", value.resourceId!!, "HDMI", { new ->
             setComputerDownloadInfo(new)
         }) { file ->
-//            file.renameTo()
+            val dest = file.parentFile.toPath()
+                .resolve(
+                    Config.formatName(value.courseTerm,value.courseName, value.courseSchedule, "HDMI")
+                )
+            Files.move(
+                file.toPath(),
+                dest, StandardCopyOption.REPLACE_EXISTING
+            )
+            saveFile(dest.toFile())
         }
     }
 
+
     fun downloadTeacher() {
-        DownloadManager.submit(id + "teacher", uiState.value.resourceId!!, "教师机位", { new ->
-            setComputerDownloadInfo(new)
+        val value = uiState.value
+        if (isDestFileExist(value.courseTerm, value.courseName, value.courseSchedule, "教师机位")) {
+            setTeacherVideoDownloadInfo(listOf(SegmentDownloadInfo(0,1,1)))
+            return
+        }
+        DownloadManager.submit(id + "teacher", value.resourceId!!, "教师机位", { new ->
+            setTeacherVideoDownloadInfo(new)
         }) { file ->
-//            file.renameTo()
+            val dest = file.parentFile.toPath()
+                .resolve(
+                    Config.formatName(value.courseTerm,value.courseName, value.courseSchedule, "教师机位")
+                )
+            Files.move(
+                file.toPath(),
+                dest, StandardCopyOption.REPLACE_EXISTING
+            )
+            saveFile(dest.toFile())
         }
     }
 
@@ -91,10 +123,21 @@ class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
         DownloadManager.register(id + "teacher") { list: List<SegmentDownloadInfo> ->
             setTeacherVideoDownloadInfo(list)
         }
+        val value = uiState.value
+        if (isDestFileExist(value.courseTerm, value.courseName, value.courseSchedule, "HDMI")) {
+            setComputerDownloadInfo(listOf(SegmentDownloadInfo(0,1,1)))
+            return
+        }
+        if (isDestFileExist(value.courseTerm, value.courseName, value.courseSchedule, "教师机位")) {
+            setTeacherVideoDownloadInfo(listOf(SegmentDownloadInfo(0,1,1)))
+            return
+        }
     }
 
     init {
         init()
-        println("init" + id)
     }
 }
+
+expect fun saveFile(file: File)
+expect fun isDestFileExist(courseTerm: String, courseName: String, courseSchedule: String,videoType:String):Boolean

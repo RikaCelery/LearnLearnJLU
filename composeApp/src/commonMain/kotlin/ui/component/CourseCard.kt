@@ -35,7 +35,9 @@ import util.calculateY
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CourseCard(
-    vm: CourseVideoCardVM
+    vm: CourseVideoCardVM,
+    onClick: (setStream: (name: String) -> Unit) -> Unit,
+    onLongClick: (setStream: (name: String) -> Unit)->Unit
 ) {
     LaunchedEffect(Unit) {
         vm.init()
@@ -57,16 +59,16 @@ fun CourseCard(
                         calculateY(percent / blockSizePercentage) * 120,
                         1f,
                         1f,
-                        if (item.segmentFinished >= item.segmentLength - 1) .8f else .2f
+                        if (item.segmentFinished >= item.segmentLength ) .8f else .2f
                     ),
-                    topLeft = Offset(size.width * offsetPercent, size.height / 2),
+                    topLeft = Offset(size.width * offsetPercent, 0f),
                     size = Size(percent * size.width, size.height / 2)
                 )
                 drawRect(
                     Color(0x22000000),
                     topLeft = Offset(
                         size.width * (offsetPercent + percent),
-                        size.height / 2
+                        0f
                     ),
                     size = Size((blockSizePercentage - percent) * size.width, size.height / 2)
                 )
@@ -96,7 +98,17 @@ fun CourseCard(
                 )
                 SegmentDownloadInfo(item.segmentIndex, item.segmentFinished, item.segmentLength + acc.segmentLength)
             }
-        }.fillMaxWidth().combinedClickable(onClick = { vm.click() }, onLongClick = { vm.longClick() })
+        }.fillMaxWidth().combinedClickable(onClick = {
+            onClick {
+            }
+        }, onLongClick = {
+            onLongClick{
+                when (it) {
+                    "HDMI" -> vm.downloadHdmi()
+                    "教师机位" -> vm.downloadTeacher()
+                }
+            }
+        })
             .padding(5.dp)
         ) {
             val (topLine, time, locationIcon, location) = createRefs()
@@ -130,7 +142,7 @@ fun CourseCard(
                 }.height(20.dp),
             )
             Text(
-                state.courseLocation?: "[教室不详]",
+                state.courseLocation ?: "[教室不详]",
                 Modifier.constrainAs(location) {
                     top.linkTo(time.bottom)
                     start.linkTo(locationIcon.end)

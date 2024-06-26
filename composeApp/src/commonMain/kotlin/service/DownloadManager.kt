@@ -33,7 +33,6 @@ object DownloadManager {
             }) { index, current, total ->
                 segments[key]!![index] = SegmentDownloadInfo(index, current, total)
                 callBacks[key]?.invoke(segments[key]!!)
-
             }
             onDownloadSuccess(file)
         })
@@ -52,3 +51,4 @@ object DownloadManager {
         }
     }
 }
+

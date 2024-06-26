@@ -10,19 +10,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import network.Http
-import network.model.TermInfo
 import network.model.CourseInfo
-import service.Persist
+import network.model.TermInfo
 import service.ILearnTech
+import service.Persist
 
 data class AppUI(
     val isLoginInProgress: Boolean = false,
     val isLoading: Boolean = false,
     val currentTerm: TermInfo? = null,
     val courseNameFilter: String = "",
-    val username:String=Persist.dbload("username")?:"",
-    val password:String=Persist.dbload("password")?:"",
-    val page:Int=0,
+    val username: String = Persist.dbload("username") ?: "",
+    val password: String = Persist.dbload("password") ?: "",
+    val page: Int = 0,
+    val showStreamsSelectPanel: Boolean = false
+
 )
 
 
@@ -39,10 +41,16 @@ class AppVM : ViewModel() {
     val terms = _terms.asStateFlow()
 
     private val _videos = mutableStateMapOf<TermInfo, List<CourseInfo>>()
+    val courses
+        get() = _uiState.value.currentTerm?.let { term ->
+            _videos[term]?.map { it.courseName }?.toSet()?.toList() ?: listOf()
+        } ?: listOf()
+
+
     val videos
         get() = _uiState.value.currentTerm?.let { term ->
-            _videos[term]?.let {
-                it.map { it ->
+            _videos[term]?.let { videos ->
+                videos.filter { it.courseName.contains(_uiState.value.courseNameFilter, true)||_uiState.value.courseNameFilter.isEmpty() }.map {
                     CourseVideoCardVM(
                         it, term.year, term.num
                     )
@@ -53,7 +61,7 @@ class AppVM : ViewModel() {
     val loginLog = mutableStateListOf<String>()
     val snackbarHostState = SnackbarHostState()
 
-    private fun snack(message: String, actionLabel: String? = null, withDismissAction: Boolean = false) {
+    fun snack(message: String, actionLabel: String? = null, withDismissAction: Boolean = false) {
         bar?.cancel()
         bar = scope.launch {
             snackbarHostState.showSnackbar(message, actionLabel, withDismissAction, SnackbarDuration.Short)
@@ -96,8 +104,8 @@ class AppVM : ViewModel() {
                     current.copy(isLoading = true)
                 }
 
-                terms.value.map {currentTerm->
-                    launch{
+                terms.value.map { currentTerm ->
+                    launch {
                         if (currentTerm == _terms.value.first()) {
                             val videos =
                                 ILearnTech.liveAndRecordingsByTerm(Http.client, currentTerm.year, currentTerm.num)
@@ -141,7 +149,7 @@ class AppVM : ViewModel() {
                 _uiState.update { current ->
                     current.copy(isLoginInProgress = true)
                 }
-                if (_uiState.value.username.isNullOrEmpty() || _uiState.value.password.isNullOrEmpty()){
+                if (_uiState.value.username.isEmpty() || _uiState.value.password.isEmpty()) {
                     snack("Username or Password is empty.")
                     return@launch
                 }
@@ -167,17 +175,38 @@ class AppVM : ViewModel() {
             it.copy(currentTerm = item)
         }
     }
+
     fun setUsername(username: String) {
         _uiState.update {
             it.copy(username = username)
         }
-        Persist.dbsave("username",username)
+        Persist.dbsave("username", username)
 
     }
+
     fun setPassword(password: String) {
         _uiState.update {
             it.copy(password = password)
         }
-        Persist.dbsave("password",password)
+        Persist.dbsave("password", password)
     }
+
+    fun requireSelectStream() {
+        _uiState.update {
+            it.copy(showStreamsSelectPanel = true)
+        }
+    }
+
+    fun dismissSelectStream() {
+        _uiState.update {
+            it.copy(showStreamsSelectPanel = false)
+        }
+    }
+
+    fun setCourseNameFilter(filter: String) {
+        _uiState.update {
+            it.copy(courseNameFilter = filter)
+        }
+    }
+
 }
