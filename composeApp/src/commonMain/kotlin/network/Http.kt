@@ -17,9 +17,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
-import kotlinx.serialization.json.Json
+import util.serialization.JSON
 import java.io.File
 import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.io.path.createTempFile
 
@@ -27,7 +28,7 @@ object Http : AutoCloseable {
     val client = HttpClient(OkHttp) {
         install(Logging) {
             logger = Logger.SIMPLE
-            level = LogLevel.INFO
+            level = LogLevel.NONE
         }
         install(DefaultRequest) {
             headers {
@@ -36,11 +37,7 @@ object Http : AutoCloseable {
             }
         }
         install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                encodeDefaults = true
-                prettyPrint = true
-            })
+            json(JSON)
         }
         install(HttpRedirect) {
             checkHttpMethod = false
@@ -91,36 +88,41 @@ object Http : AutoCloseable {
         }, block = block)
     }
 
+    @OptIn(ExperimentalContracts::class)
     suspend fun splitDownload(
-        url: String, progressing: (index: Int,current:Long, total:Long) -> Unit
+        url: String, length:Long?=null, beforeStart:suspend (List<LongRange>)->Unit={}, progressing: suspend (index: Int, current:Long, total:Long) -> Unit={ _, _, _->}
     ): File {
-
+        contract {
+        callsInPlace(beforeStart,InvocationKind.EXACTLY_ONCE)
+        }
         val response = client.head(url)
         require(response.headers["Accept-Ranges"] == "bytes") { "Range not supported" }
         requireNotNull(response.headers["Content-Length"]) { "Content-Length not found" }
-        val contentLength = response.headers["Content-Length"]!!.toLong()
-        val chunkSize = 1024 * 1024 * 30
+        val contentLength = length?:response.headers["Content-Length"]!!.toLong()
+        require(contentLength>1024*1024){"文件太小，不支持下载"+ client.get(url).bodyAsText()}
+        val chunkSize = 1024 * 1024 * 100
         val saveTo = createTempFile("split", "tmp")
         val os = saveTo.toFile().outputStream()
         supervisorScope {
-            (0 until contentLength / chunkSize)
+            (0 .. contentLength / chunkSize)
                 .map { it * chunkSize..<(it.plus(1) * chunkSize).coerceAtMost(contentLength - 1) }
+                .also {
+                    beforeStart(it)
+                }
                 .mapIndexed { index, range ->
                     async(Dispatchers.IO) {
                         println("downloading $index")
-                        index to downloadRange(url, range) {
+                        index to downloadRange(url, range,{ sum,total ->
+                            progressing(index,sum,total)
+                        }) {
                             val file = createTempFile("split", "tmp").toFile()
                             val buf = ByteArray(1024)
                             val fileOutputStream = file.outputStream()
                             bodyAsChannel().toInputStream().use {
-                                val total = range.last - range.first + 1
-                                var sum = 0L
                                 while (true) {
                                     val len = it.read(buf)
                                     if (len == -1) break
                                     fileOutputStream.write(buf, 0, len)
-                                    sum += len
-                                    progressing(index,sum,total)
                                 }
                             }
                             fileOutputStream.close()
@@ -145,9 +147,8 @@ object Http : AutoCloseable {
     }
 
     @OptIn(ExperimentalContracts::class)
-    suspend fun <R> downloadRange(url: String, range: LongRange, writer: (suspend HttpResponse.() -> R)? = null): R? {
+    suspend fun <R> downloadRange(url: String, range: LongRange,progressing:suspend (Long,Long) ->Unit={_,_->}, writer: (suspend HttpResponse.() -> R)? = null): R? {
         contract {
-
             returns(null) implies (writer == null)
             returnsNotNull() implies (writer != null)
         }
@@ -155,6 +156,9 @@ object Http : AutoCloseable {
         val response = client.get(url) {
             headers {
                 append("Range", "bytes=${range.first}-${range.last}")
+            }
+            onDownload { bytesSentTotal, contentLength ->
+                progressing.invoke(bytesSentTotal,contentLength)
             }
         }
         return writer?.invoke(response)

@@ -10,8 +10,8 @@ import kotlinx.serialization.json.*
 @Serializable
 data class CourseInfo(
     val buildingName: String?,
-    val classIds: String,
-    val classNames: String,
+    val classIds: String?,
+    val classNames: String?,
     val classType: String,
     val courseId: String,
     val courseName: String,

@@ -35,6 +35,6 @@ data class CourseVideoInfo(
         val videoCode: String = "", // 1
         val videoName: String = "", // 教师机位
         val videoPath: String = "", // xxx
-        val videoSize: String = "" // 1537086461
+        val videoSize: Long = 0 // 1537086461
     )
 }

@@ -1,15 +1,15 @@
 package ui.vm
 
+import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import network.Http
+import kotlinx.coroutines.flow.update
 import network.model.CourseInfo
-import service.ILearnTech
+import service.DownloadManager
 
 data class CourseVideoCard(
     val courseName: String,
@@ -38,22 +38,63 @@ class CourseVideoCardVM(card: CourseVideoCard) : ViewModel() {
         )
     )
 
+    private val _teacherVideoDownloadInfo = MutableStateFlow(mutableListOf<SegmentDownloadInfo>())
+    private fun setTeacherVideoDownloadInfo(new: List<SegmentDownloadInfo>) {
+        _teacherVideoDownloadInfo.update {
+            new.toMutableStateList()
+        }
+    }
+    val teacherVideoDownloadInfo = _teacherVideoDownloadInfo.asStateFlow()
+
+    private val _computerVideoDownloadInfo = MutableStateFlow(mutableListOf<SegmentDownloadInfo>())
+    private fun setComputerDownloadInfo(new: List<SegmentDownloadInfo>) {
+        _computerVideoDownloadInfo.update {
+            new.toMutableStateList()
+        }
+    }
+    val computerVideoDownloadInfo = _computerVideoDownloadInfo.asStateFlow()
+
     val id
         get() = uiState.value.id
+    private val scope = CoroutineScope(SupervisorJob())
     private val _uiState = MutableStateFlow(card)
     val uiState: StateFlow<CourseVideoCard> = _uiState.asStateFlow()
-    fun click() {
-        GlobalScope.launch(Dispatchers.IO) {
-            val info = ILearnTech.queryDownloadInfo(Http.client,_uiState.value.resourceId!!)
-            val file =  Http.splitDownload(info.videoList[1].videoPath){ index, current, total ->
 
-            }
-            println(file)
-        }
+    fun click() {
         //todo
+    }
+
+    fun downloadHdmi() {
+        DownloadManager.submit(id + "hdmi", uiState.value.resourceId!!, "HDMI", { new ->
+            setComputerDownloadInfo(new)
+        }) { file ->
+//            file.renameTo()
+        }
+    }
+
+    fun downloadTeacher() {
+        DownloadManager.submit(id + "teacher", uiState.value.resourceId!!, "教师机位", { new ->
+            setComputerDownloadInfo(new)
+        }) { file ->
+//            file.renameTo()
+        }
     }
 
     fun longClick() {
         //todo
+    }
+
+    fun init() {
+        DownloadManager.register(id + "hdmi") { list: List<SegmentDownloadInfo> ->
+            setComputerDownloadInfo(list)
+        }
+        DownloadManager.register(id + "teacher") { list: List<SegmentDownloadInfo> ->
+            setTeacherVideoDownloadInfo(list)
+        }
+    }
+
+    init {
+        init()
+        println("init" + id)
     }
 }

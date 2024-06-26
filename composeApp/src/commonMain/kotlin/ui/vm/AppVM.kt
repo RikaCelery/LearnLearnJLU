@@ -95,21 +95,34 @@ class AppVM : ViewModel() {
                 _uiState.update { current ->
                     current.copy(isLoading = true)
                 }
-                val currentTerm = _uiState.value.currentTerm ?: return@launch
-                if (currentTerm == _terms.value.first()) {
-                    val videos = ILearnTech.liveAndRecordingsByTerm(Http.client, currentTerm.year, currentTerm.num)
-                    if (videos.isNotEmpty()) {
-                        _videos[currentTerm] = videos
+
+                terms.value.map {currentTerm->
+                    launch{
+                        if (currentTerm == _terms.value.first()) {
+                            val videos =
+                                ILearnTech.liveAndRecordingsByTerm(Http.client, currentTerm.year, currentTerm.num)
+                            if (videos.isNotEmpty()) {
+                                _videos[currentTerm] = videos
+                            }
+                        } else {
+                            val lessons = ILearnTech.lessons(Http.client, currentTerm.year, currentTerm.num)
+                            val videos = lessons.map {
+                                async {
+                                    ILearnTech.liveAndRecordingsByLesson(
+                                        Http.client,
+                                        currentTerm.id,
+                                        it.classroomId
+                                    )
+                                }
+                            }.awaitAll().flatten()
+                            if (videos.isNotEmpty()) {
+                                _videos[currentTerm] = videos
+                            }
+                        }
                     }
-                } else {
-                    val lessons = ILearnTech.lessons(Http.client, currentTerm.year, currentTerm.num)
-                    val videos = lessons.map {
-                        async { ILearnTech.liveAndRecordingsByLesson(Http.client, currentTerm.id, it.classroomId) }
-                    }.awaitAll().flatten()
-                    if (videos.isNotEmpty()) {
-                        _videos[currentTerm] = videos
-                    }
-                }
+                }.joinAll()
+
+
             } finally {
                 _uiState.update { current ->
                     current.copy(isLoading = false)

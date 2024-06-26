@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 import network.model.*
 import org.jsoup.Jsoup
 import util.crypto.strEnc
+import util.serialization.JSON
 import util.serialization.String
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -87,7 +88,7 @@ object ILearnTech {
                 parameter("_", ts0)
             }
             require(ilearnGetNonceResp0.status.isSuccess()) { "Get CAS Nonce Failed" }
-            val ilearnCasReturn0 = Json.Default.parseToJsonElement(
+            val ilearnCasReturn0 = JSON.parseToJsonElement(
                 ilearnGetNonceResp0.bodyAsText().substring(14, ilearnGetNonceResp0.bodyAsText().length - 2)
             )
             logging(msg("ilearntec CAS Login lt got"))
@@ -108,7 +109,7 @@ object ILearnTech {
                 parameter("_", ts)
             }
             require(ilearnGetNonceResp.status.isSuccess()) { "Ilraen CAS Login Failed" }
-            val ilearnCasReturn = Json.Default.parseToJsonElement(
+            val ilearnCasReturn = JSON.parseToJsonElement(
                 ilearnGetNonceResp.bodyAsText().substring(14, ilearnGetNonceResp.bodyAsText().length - 4)
             )
             logging(msg("ilearntec CAS Login Done, Ticket Got."))
@@ -190,7 +191,7 @@ object ILearnTech {
         val response = client.get(Consts.QUERY_VIDEO_INFO) {
             parameter("resourceId", resourceId)
         }.body<JsonResponse<CourseVideoInfo>>()
-        require(response.status == 1) { "Query Download Info Failed" }
+        require(response.status == 1) { "Query Download Info Failed"+response.toString() }
         requireNotNull(response.data) { "Query Download Info Failed, 'data' Is Null" }
         return response.data
     }

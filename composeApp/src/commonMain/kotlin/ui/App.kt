@@ -1,3 +1,5 @@
+package ui
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -50,11 +52,12 @@ fun App(vm: AppVM = viewModel()) {
                     }
                     var display by remember { mutableStateOf(false) }
                     OutlinedButton(
-                        { display = !display
-                            if(vm.terms.value.isEmpty())
-                            vm.refreshTerms {
-                                vm.refreshVideos()
-                            }
+                        {
+                            display = !display
+                            if (vm.terms.value.isEmpty())
+                                vm.refreshTerms {
+                                    vm.refreshVideos()
+                                }
                         }, contentPadding = PaddingValues(horizontal = 10.dp)
                     ) {
                         Column(
@@ -67,7 +70,6 @@ fun App(vm: AppVM = viewModel()) {
                                 }, onClick = {
                                     display = false
                                     vm.setTerm(item)
-                                    vm.refreshVideos()
                                 })
                             }
                         }
